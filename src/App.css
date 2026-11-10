@@ -219,6 +219,27 @@
   line-height: 1.7;
 }
 
+.prompt-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.prompt-counter {
+  justify-self: end;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.prompt-counter--over,
+.prompt-error {
+  color: var(--danger);
+}
+
+.prompt-error {
+  font-size: 0.9rem;
+}
+
 .btn-generate {
   height: 48px;
   padding: 0 22px;
