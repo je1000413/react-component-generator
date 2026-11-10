@@ -203,6 +203,21 @@
   color: var(--ok);
 }
 
+.remember-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.key-warning {
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
 /* ───────── 프롬프트 ───────── */
 .prompt-form {
   display: grid;
