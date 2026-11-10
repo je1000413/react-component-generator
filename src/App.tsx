@@ -3,6 +3,9 @@ import { PromptInput } from './components/PromptInput';
 import { ComponentCard } from './components/ComponentCard';
 import { Window } from './components/Window';
 import { useComponentGenerator } from './hooks/useComponentGenerator';
+import { usePromptHistory } from './hooks/usePromptHistory';
+import { useApiKey } from './hooks/useApiKey';
+import { readStorage, writeStorage, STORAGE_KEYS } from './utils/storage';
 import type { Provider } from './types';
 import './App.css';
 
@@ -11,10 +14,22 @@ const PROVIDER_CONFIG = {
   google: { label: 'Google', placeholder: 'AIza...' },
 } as const;
 
+function isProvider(value: unknown): value is Provider {
+  return typeof value === 'string' && Object.keys(PROVIDER_CONFIG).includes(value);
+}
+
 function App() {
-  const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [provider, setProvider] = useState<Provider>('google');
+  const [provider, setProvider] = useState<Provider>(() =>
+    readStorage<Provider>(STORAGE_KEYS.provider, 'google', isProvider),
+  );
+  const { apiKey, setApiKey, remember, setRemember } = useApiKey(provider);
+  const { history, addPrompt } = usePromptHistory();
+
+  useEffect(() => {
+    writeStorage(STORAGE_KEYS.provider, provider);
+  }, [provider]);
+
   const [envKeys, setEnvKeys] = useState<Record<Provider, boolean>>({
     anthropic: false,
     google: false,
@@ -36,12 +51,12 @@ function App() {
       alert(`${PROVIDER_CONFIG[provider].label} API 키를 입력하거나 .env에 설정해주세요.`);
       return;
     }
+    addPrompt(prompt);
     generate(prompt, apiKey || undefined, provider);
   };
 
   const handleProviderChange = (newProvider: Provider) => {
     setProvider(newProvider);
-    setApiKey('');
   };
 
   const activeProvider = PROVIDER_CONFIG[provider].label;
@@ -57,7 +72,7 @@ function App() {
 
         <main className="workspace">
           <Window title="무엇을 만들까요?" className="composer-window">
-            <PromptInput onGenerate={handleGenerate} isLoading={isLoading} />
+            <PromptInput onGenerate={handleGenerate} isLoading={isLoading} history={history} />
           </Window>
 
           <Window title="실행 설정" className="settings-window">
@@ -103,6 +118,19 @@ function App() {
                   ? '.env 키가 연결되어 있습니다.'
                   : '직접 입력하거나 서버 환경변수를 설정하세요.'}
               </p>
+              <label className="remember-key">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                키 기억하기
+              </label>
+              {remember && (
+                <p className="key-warning">
+                  키가 이 브라우저의 localStorage에 평문으로 저장됩니다. 공용 컴퓨터에서는 끄세요.
+                </p>
+              )}
             </div>
           </Window>
         </main>

@@ -1,5 +1,35 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { GeneratedComponent, Provider } from '../types';
+import { readStorage, writeStorage, STORAGE_KEYS } from '../utils/storage';
+
+// localStorage에는 Date를 직렬화할 수 없으므로 createdAt을 문자열로 저장한다.
+interface StoredComponent {
+  id: string;
+  prompt: string;
+  code: string;
+  createdAt: string;
+}
+
+function isStoredComponentList(value: unknown): value is StoredComponent[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === 'object' &&
+        item !== null &&
+        typeof item.id === 'string' &&
+        typeof item.prompt === 'string' &&
+        typeof item.code === 'string' &&
+        typeof item.createdAt === 'string',
+    )
+  );
+}
+
+function loadComponents(): GeneratedComponent[] {
+  return readStorage<StoredComponent[]>(STORAGE_KEYS.components, [], isStoredComponentList).map(
+    (item) => ({ ...item, createdAt: new Date(item.createdAt) }),
+  );
+}
 
 interface UseComponentGeneratorReturn {
   components: GeneratedComponent[];
@@ -11,9 +41,13 @@ interface UseComponentGeneratorReturn {
 }
 
 export function useComponentGenerator(): UseComponentGeneratorReturn {
-  const [components, setComponents] = useState<GeneratedComponent[]>([]);
+  const [components, setComponents] = useState<GeneratedComponent[]>(loadComponents);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    writeStorage(STORAGE_KEYS.components, components);
+  }, [components]);
 
   const generate = useCallback(async (prompt: string, apiKey: string | undefined, provider: Provider) => {
     setIsLoading(true);
